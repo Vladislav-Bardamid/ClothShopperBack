@@ -33,8 +33,7 @@
         "watch",
         "run",
         "--project",
-        "${workspaceFolder}/ClothShopperBack.API/ClothShopperBack.API.csproj",
-        // "${env:DOTNET_WATCH_RESTART_ON_RUDE_EDIT}"
+        "${workspaceFolder}/ClothShopperBack.API/ClothShopperBack.API.csproj"
       ],
       "problemMatcher": "$msCompile"
     }

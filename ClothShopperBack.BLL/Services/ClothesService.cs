@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using AutoMapper;
 using ClothShopperBack.BLL.Models;
 using ClothShopperBack.DAL.Common;
@@ -9,7 +8,7 @@ namespace ClothShopperBack.BLL.Services;
 
 public interface IPhotoService
 {
-    Task<List<ClothDTO>?> GetPhotos(int start = 0, int length = 50);
+    Task<List<ClothDTO>?> GetPhotos(ClothesFilterModel? filter = null);
 }
 
 public class ClothesService : IPhotoService
@@ -23,30 +22,55 @@ public class ClothesService : IPhotoService
         _mapper = mapper;
     }
 
-    public async Task<List<ClothDTO>?> GetPhotos(int start = 0, int length = 50)
+    public async Task<List<ClothDTO>?> GetPhotos(ClothesFilterModel? filter = null)
     {
-        var vkPhotos = await _api.GetPhotos(-171875990, 280934757);
+        var vkPhotos = await _api.GetPhotos(174012088, 263431528);
         var photos = vkPhotos.Where(x => !string.IsNullOrEmpty(x.Text))
-                             .Select(ProceedCloth)
-                             .ToList();
-        return photos;
+                             .Select(ProceedCloth);
+
+        if (filter == null)
+            return photos.ToList();
+
+        if (filter.Text != null)
+        {
+            photos = photos.Where(x => x.Text.ToLower().Contains(filter.Text));
+        }
+        if (filter.MinPrice != 0)
+        {
+            photos = photos.Where(x => x.Price > filter?.MinPrice);
+        }
+        if (filter.MaxPrice != 0)
+        {
+            photos = photos.Where(x => x.Price < filter?.MaxPrice);
+        }
+        if (filter.SortType != SortType.Date)
+        {
+            photos = filter.SortType switch
+            {
+                SortType.Name => photos.OrderBy(x => x.Title),
+                SortType.LowPrice => photos.OrderBy(x => x.Price),
+                SortType.HightPrice => photos.OrderByDescending(x => x.Price)
+            };
+        }
+
+        return photos.ToList();
     }
 
     private ClothDTO ProceedCloth(VkPhoto photo)
     {
         var photoDTO = _mapper.Map<ClothDTO>(photo);
 
-        photoDTO.Title = Regex.Match(photo.Text, @"^([а-яА-Я\w\s.,\(\)-]+?);?\n").Groups[1].Value;
+        var wh = @"([\d-*]+)";
+        var match = Regex.Match(photo.Text, @$"^\d+\s[A-zА-я]\s(.+)\s(?:длинна|дл|д)\s?{wh}\s(?:ширина|шир|ш)\s?{wh}\s(.+)?\s(?:цена)\s?(\d+)", RegexOptions.IgnoreCase);
 
-        int.TryParse(Regex.Match(photo.Text, @"(?:д|дл|длинна)\s?(\d+)").Groups[1].Value, out var width);
-        photoDTO.Width = width;
+        photoDTO.Title = match.Groups[1].Value;
+        photoDTO.Width = match.Groups[2].Value;
+        photoDTO.Height = match.Groups[3].Value;
+        photoDTO.Scrap = match.Groups[4].Value;
 
-        int.TryParse(Regex.Match(photo.Text, @"(?:ш|шир|ширина)\s?(\d+)").Groups[1].Value, out var height);
-        photoDTO.Height = height;
-
-        int.TryParse(Regex.Match(photo.Text, @"(\d+)\sруб").Groups[1].Value, out var price);
+        int.TryParse(match.Groups[5].Value, out var price);
         photoDTO.Price = price;
-        
+
         return photoDTO;
     }
 }
