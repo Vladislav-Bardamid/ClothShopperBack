@@ -17,8 +17,9 @@ namespace ClothShopperBack.BLL.Models
 
     public enum SortType{
         Date,
+        DateDesc,
         Name,
-        LowPrice,
-        HightPrice
+        Price,
+        PriceDesc
     }
 }

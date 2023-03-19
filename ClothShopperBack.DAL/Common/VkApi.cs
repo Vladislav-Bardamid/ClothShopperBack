@@ -29,7 +29,7 @@ public class VkAPI : IVkAPI
         var accessToken = _configuration["AccessToken"];
         var query = $"{_baseUri}/photos.get?access_token={accessToken}&owner_id=-{ownerId}&album_id={albumId}&v=5.131";
 
-        var result = await SendVkApiResponse<GetVkPhotosResult>(query);
+        var result = await SendVkApiResponse<GetVkListResult<VkPhoto>>(query);
 
         return result.Items;
     }

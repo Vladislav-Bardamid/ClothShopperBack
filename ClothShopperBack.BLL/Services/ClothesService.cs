@@ -24,7 +24,8 @@ public class ClothesService : IPhotoService
 
     public async Task<List<ClothDTO>?> GetPhotos(ClothesFilterModel? filter = null)
     {
-        var vkPhotos = await _api.GetPhotos(174012088, 263431528);
+        // var vkPhotos = await _api.GetPhotos(174012088, 263258790); // Main album
+        var vkPhotos = await _api.GetPhotos(174012088, 263431528); // New clothes
         var photos = vkPhotos.Where(x => !string.IsNullOrEmpty(x.Text))
                              .Select(ProceedCloth);
 
@@ -47,9 +48,10 @@ public class ClothesService : IPhotoService
         {
             photos = filter.SortType switch
             {
+                SortType.DateDesc => photos.OrderByDescending(x => x.Date),
                 SortType.Name => photos.OrderBy(x => x.Title),
-                SortType.LowPrice => photos.OrderBy(x => x.Price),
-                SortType.HightPrice => photos.OrderByDescending(x => x.Price)
+                SortType.Price => photos.OrderBy(x => x.Price),
+                SortType.PriceDesc => photos.OrderByDescending(x => x.Price)
             };
         }
 

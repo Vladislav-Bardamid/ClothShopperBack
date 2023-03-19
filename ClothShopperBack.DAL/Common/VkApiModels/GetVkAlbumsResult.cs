@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace ClothShopperBack.DAL.Common.VkApiModels
 {
-    internal class GetVkPhotosResult
+    internal class GetVkAlbumsResult
     {
         public int Count { get; set; }
         public List<VkPhoto>? Items { get; set; }
