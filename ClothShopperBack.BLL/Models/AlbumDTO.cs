@@ -3,5 +3,5 @@
 public class AlbumDTO
 {
     public int Id { get; set; }
-    public string? Ulr { get; set; }
+    public string Title { get; set; }
 }

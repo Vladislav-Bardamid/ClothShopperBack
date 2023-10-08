@@ -1,7 +1,10 @@
-﻿namespace ClothShopperBack.DAL.Entities;
+﻿using Microsoft.AspNetCore.Identity;
 
-public class User
+namespace ClothShopperBack.DAL.Entities;
+
+public class User : IdentityUser<int>
 {
-    public int Id { get; set; }
-    public string? Token { get; set; }
+    public int VkUserId { get; set; }
+    public string VkAccessToken { get; set; }
+    public ICollection<Order> Orders { get; set; }
 }

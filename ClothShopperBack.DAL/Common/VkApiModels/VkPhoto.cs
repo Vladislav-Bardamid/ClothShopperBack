@@ -6,6 +6,7 @@ public class VkPhoto
 {
     public int Id { get; set; }
     [JsonPropertyName("album_id")]
+    public int OwnerId { get; set; }
     public int AlbumId { get; set; }
     public string Text { get; set; }
     public int Date { get; set; }

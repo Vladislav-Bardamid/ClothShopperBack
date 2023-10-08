@@ -1,8 +1,10 @@
-﻿namespace ClothShopperBack.API.Models;
+namespace ClothShopperBack.BLL.Models;
 
-public class ClothViewModel
+public class OrderDTO
 {
-    public int Id { get; set; }
+    public int ClothId { get; set; }
+    public int UserId { get; set; }
+    public int? OrderListId { get; set; }
     public string? Text { get; set; }
     public string? Title { get; set; }
     public string? Scrap { get; set; }
@@ -13,4 +15,5 @@ public class ClothViewModel
     public string? UrlSm { get; set; }
     public string? UrlMd { get; set; }
     public string? UrlLg { get; set; }
+    public bool? IsSuccess { get; set; }
 }

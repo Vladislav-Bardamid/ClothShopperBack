@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using ClothShopperBack.API.Models;
 using ClothShopperBack.BLL.Models;
 using ClothShopperBack.DAL.Common.VkApiModels;
 using ClothShopperBack.DAL.Entities;
@@ -9,17 +10,30 @@ internal class AutoMapperConfig : Profile
 {
     public AutoMapperConfig()
     {
+        // Db maps
         CreateMap<User, UserDTO>().ReverseMap();
-        CreateMap<VkPhoto, ClothDTO>()
-            .ForMember(d => d.Title, m => m.MapFrom(e => e.Text))
-            .ForMember(d => d.UrlSm, m => m.MapFrom(e => e.Sizes.First(x => x.Type == 'x').Url))
-            .ForMember(d => d.UrlMd, m => m.MapFrom(e => e.Sizes.First(x => x.Type == 'y').Url))
-            .ForMember(d => d.UrlLg, m => m.MapFrom(e => e.Sizes.First(x => x.Type == 'z').Url))
-            .ForMember(d => d.Date, m => m.MapFrom(e => ConvertFromUnixTimestamp(e.Date)))
-            .ForMember(d => d.Width, m => m.Ignore())
-            .ForMember(d => d.Height, m => m.Ignore())
-            .ReverseMap();
+        CreateMap<Cloth, ClothDTO>().ReverseMap();
         CreateMap<Album, AlbumDTO>().ReverseMap();
+        CreateMap<Order, OrderDTO>().ReverseMap();
+        CreateMap<OrderList, OrderListDTO>().ReverseMap();
+        
+        // Vk maps
+        CreateMap<VkAlbum, AlbumDTO>()
+            .ForMember(d => d.Id, m => m.Ignore());
+        CreateMap<VkPhoto, Cloth>()
+            .ForMember(d => d.VkAlbumId, m => m.MapFrom(e => e.AlbumId))
+            .ForMember(d => d.VkOwnerId, m => m.MapFrom(e => e.OwnerId))
+            .ForMember(d => d.UrlSm, m => m.MapFrom(e => FirstUrlOrDefault(e.Sizes, 'x')))
+            .ForMember(d => d.UrlMd, m => m.MapFrom(e => FirstUrlOrDefault(e.Sizes, 'y')))
+            .ForMember(d => d.UrlLg, m => m.MapFrom(e => FirstUrlOrDefault(e.Sizes, 'z')))
+            .ForMember(d => d.Date, m => m.MapFrom(e => ConvertFromUnixTimestamp(e.Date)))
+            .ForMember(d => d.Id, m => m.Ignore())
+            .ForMember(d => d.AlbumId, m => m.Ignore());
+    }
+
+    private string FirstUrlOrDefault(IEnumerable<VkPhotoSize> sizes, char type)
+    {
+        return sizes.FirstOrDefault(x => x.Type == type)?.Url ?? sizes.First(x => x.Type == 'x').Url;
     }
 
     private DateTime ConvertFromUnixTimestamp(int timestamp)
