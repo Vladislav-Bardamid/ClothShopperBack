@@ -20,15 +20,8 @@ public class AlbumController : ControllerBase
     [HttpGet]
     public async Task<ActionResult> GetAlbumsAsync()
     {
-        try
-        {
-            var albums = await _albumService.GetAlbumsAsync();
+        var albums = await _albumService.GetAlbumsAsync();
 
-            return Ok(albums);
-        }
-        catch (Exception e)
-        {
-            return BadRequest(e.Message);
-        }
+        return Ok(albums);
     }
 }

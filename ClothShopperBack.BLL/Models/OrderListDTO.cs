@@ -6,5 +6,6 @@ public class OrderListDTO
 {
     public int Id { get; set; }
     public DateTime? CommitDate { get; set; }
-    public List<Order> Orders { get; set; }
+    public List<OrderDTO> Orders { get; set; }
+    public int PriceSum { get; set; }
 }

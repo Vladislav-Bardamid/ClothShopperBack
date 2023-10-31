@@ -22,65 +22,73 @@ public class OrderController : ControllerBase
 
     [Authorize]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Order>>> GetUnlistedOrdersAsync()
+    public async Task<ActionResult<IEnumerable<Order>>> GetOrderListAsync()
     {
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var orders = await _orderService.GetUnlistedOrdersAsync(userId);
+        
+        var orderList = await _orderService.GetOrderListAsync(userId);
 
-        return Ok(orders);
+        return Ok(orderList);
+    }
+    
+    [HttpGet("commitDate")]
+    public ActionResult GetOrderListCommitDate()
+    {
+        var result = _orderService.GetOrderListCommitDate();
+
+        return Ok(result);
+    }
+
+    [Authorize]
+    [HttpGet("sum")]
+    public async Task<ActionResult<IEnumerable<Order>>> GetUserSumPrice()
+    {
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        
+        var result = await _orderService.GetUserSumPrice(userId);
+
+        return Ok(result);
     }
 
     [Authorize]
     [HttpPost]
-    public async Task<ActionResult> CreateOrdersAsync(IEnumerable<int> list)
+    public async Task<ActionResult> ChangeOrdersAsync(OrderListCommand command)
     {
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-        try
-        {
-            await _orderService.CreateOrdersAsync(list, userId);
+        await _orderService.ChangeOrdersAsync(command, userId);
 
-            return Ok();
-        }
-        catch (Exception e)
-        {
-            return BadRequest(e.Message);
-        }
+        return Ok();
     }
 
     [Authorize]
-    [HttpDelete]
-    public async Task<ActionResult> RemoveOrdersAsync(IEnumerable<int> list)
+    [HttpDelete("{id}")]
+    public async Task<ActionResult> DeleteOrderAsync(int id)
+    {
+        await _orderService.DeleteOrderAsync(id);
+
+        return Ok();
+    }
+
+    [Authorize]
+    [HttpDelete("album/{albumId}")]
+    public async Task<ActionResult> DeleteAllUserAlbumOrdersAsync(int albumId)
     {
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-        try
-        {
-            await _orderService.DeleteOrdersAsync(list, userId);
+        await _orderService.DeleteAllUserAlbumOrdersAsync(userId, albumId);
 
-            return Ok();
-        }
-        catch (Exception e)
-        {
-            return BadRequest(e.Message);
-        }
+        return Ok();
     }
 
     [Authorize]
     [HttpDelete("all")]
-    public async Task<ActionResult> RemoveAllOrdersAsync()
+    public async Task<ActionResult> DeleteAllUserOrdersAsync()
     {
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-        try
-        {
-            await _orderService.DeleteOrdersAsync(userId);
+        await _orderService.DeleteAllUserOrdersAsync(userId);
 
-            return Ok();
-        }
-        catch (Exception e)
-        {
-            return BadRequest(e.Message);
-        }
+        return Ok();
     }
 }

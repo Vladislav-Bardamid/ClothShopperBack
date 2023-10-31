@@ -21,18 +21,11 @@ public class ClothController : ControllerBase
     [HttpGet]
     public async Task<ActionResult> GetClothesAsync([FromQuery] ClothesFilterModelDTO filter)
     {
-        try
-        {
-            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            filter.UserId = userId;
-            
-            var photos = await _clothService.GetCachedClothesAsync(filter);
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        filter.UserId = userId;
 
-            return Ok(photos);
-        }
-        catch (Exception e)
-        {
-            return BadRequest(e.Message);
-        }
+        var photos = await _clothService.GetCachedClothesAsync(filter);
+
+        return Ok(photos);
     }
 }

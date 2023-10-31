@@ -8,12 +8,15 @@ namespace ClothShopperBack.BLL.Services;
 
 public interface IOrderService
 {
-    Task<List<OrderDTO>> GetUnlistedOrdersAsync(int userId);
-    Task<List<OrderDTO>> GetOrdersByListIdAsync(int listId, int userId);
+    Task<OrderListDTO> GetOrderListAsync(int userId);
+    Task<OrderListDTO> GetOrderListByIdAsync(int listId, int userId);
     Task<List<OrderListDTO>> GetCompletedOrderListsAsync(int userId);
-    Task CreateOrdersAsync(IEnumerable<int> list, int userId);
-    Task DeleteOrdersAsync(IEnumerable<int> list, int userId);
-    Task DeleteOrdersAsync(int userId);
+    Task<int> GetUserSumPrice(int userId);
+    Task ChangeOrdersAsync(OrderListCommand command, int userId);
+    Task DeleteOrderAsync(int id);
+    Task DeleteAllUserOrdersAsync(int userId);
+    Task DeleteAllUserAlbumOrdersAsync(int userId, int albumId);
+    DateTime GetOrderListCommitDate();
 }
 
 public class OrderService : IOrderService
@@ -27,61 +30,134 @@ public class OrderService : IOrderService
         _mapper = mapper;
     }
 
-    public async Task<List<OrderDTO>> GetUnlistedOrdersAsync(int userId)
+    public async Task<OrderListDTO> GetOrderListAsync(int userId)
     {
-        var orders = await _context.Orders.Where(x => x.UserId == userId && x.OrderListId == null).ToListAsync();
+        var orderList = await _context.OrderLists
+            .Include(x => x.Orders)
+            .ThenInclude(x => x.Cloth)
+            .SingleOrDefaultAsync(x => x.UserId == userId && x.CommitDate == null);
 
-        return _mapper.Map<List<OrderDTO>>(orders);
+        var result = _mapper.Map<OrderListDTO>(orderList);
+
+        result.PriceSum = orderList!.Orders.Sum(x => x.Cloth!.Price);
+        result.CommitDate = GetOrderListCommitDate();
+
+        return result;
     }
 
-    public async Task<List<OrderDTO>> GetOrdersByListIdAsync(int listId, int userId)
+    public DateTime GetOrderListCommitDate()
     {
-        var orders = await _context.Orders.Where(x => x.OrderListId == listId && x.UserId == userId).ToListAsync();
+        var now = DateTime.Now;
+        var dayOfWeek = DayOfWeek.Tuesday;
+        var hours = 22;
+        var diff =
+            new TimeSpan((int)dayOfWeek, hours, 0, 0)
+            - new TimeSpan((int)now.DayOfWeek, now.Hour, 0, 0);
+        var dayDiff = ((int)dayOfWeek - diff.Days + 7) % 7;
 
-        return _mapper.Map<List<OrderDTO>>(orders);
+        return now.Date.AddDays(dayDiff).AddHours(hours);
+    }
+
+    public async Task<OrderListDTO> GetOrderListByIdAsync(int listId, int userId)
+    {
+        var orderList = await _context.OrderLists
+            .Include(x => x.Orders)
+            .SingleOrDefaultAsync(x => x.Id == listId && x.UserId == userId);
+
+        var result = _mapper.Map<OrderListDTO>(orderList);
+
+        result.PriceSum = orderList!.Orders.Sum(x => x.Cloth!.Price);
+
+        return result;
     }
 
     public async Task<List<OrderListDTO>> GetCompletedOrderListsAsync(int userId)
     {
-        var orderLists = await _context.OrderLists.Where(x => x.UserId == userId && x.CommitDate != null).ToListAsync();
+        var orderLists = await _context.OrderLists
+            .Where(x => x.UserId == userId && x.CommitDate != null)
+            .ToListAsync();
 
         return _mapper.Map<List<OrderListDTO>>(orderLists);
     }
 
-    public async Task CreateOrdersAsync(IEnumerable<int> orderIds, int userId)
+    public async Task<int> GetUserSumPrice(int userId)
     {
-        var orders = orderIds.Select(x => new Order()
-        {
-            ClothId = x,
-            UserId = userId
-        }).ToList();
+        var orderList = await _context.OrderLists
+            .Include(x => x.Orders)
+            .ThenInclude(x => x.Cloth)
+            .SingleOrDefaultAsync(x => x.UserId == userId);
 
-        var orderList = new OrderList()
-        {
-            UserId = userId,
-            Orders = orders
-        };
+        return orderList?.Orders.Sum(x => x.Cloth!.Price) ?? 0;
+    }
 
-        await _context.AddAsync(orderList);
+    public async Task ChangeOrdersAsync(OrderListCommand command, int userId)
+    {
+        await AddOrdersAsync(command.Add, userId);
+        await DeleteOrdersAsync(command.Delete);
+
         await _context.SaveChangesAsync();
     }
 
-    public async Task DeleteOrdersAsync(IEnumerable<int> list, int userId)
+    private async Task AddOrdersAsync(IEnumerable<int> list, int userId)
     {
-        var models = list.Select(x => new Order()
+        var orderList = _context.OrderLists.SingleOrDefault(x => x.UserId == userId);
+
+        if (orderList == null)
         {
-            ClothId = x,
-            UserId = userId
-        });
+            orderList = new OrderList()
+            {
+                UserId = userId,
+                Orders = list.Select(x => new Order() { ClothId = x }).ToList()
+            };
+
+            await _context.OrderLists.AddAsync(orderList);
+        }
+        else
+        {
+            var orders = list.Select(x => new Order() { ClothId = x, OrderListId = orderList.Id })
+                .ToList();
+
+            await _context.Orders.AddRangeAsync(orders);
+        }
+    }
+
+    private async Task DeleteOrdersAsync(IEnumerable<int> list)
+    {
+        var models = _context.Orders.Where(x => list.Contains(x.ClothId));
 
         _context.Orders.RemoveRange(models);
+    }
+
+    public async Task DeleteOrderAsync(int id)
+    {
+        var order = await _context.Orders.SingleAsync(x => x.Id == id);
+
+        _context.Orders.Remove(order);
 
         await _context.SaveChangesAsync();
     }
 
-    public async Task DeleteOrdersAsync(int userId)
+    public async Task DeleteAllUserOrdersAsync(int userId)
     {
-        _context.Orders.RemoveRange(_context.Orders.Where(x => x.UserId == userId));
+        var ordersToRemove = _context.OrderLists
+            .Where(x => x.UserId == userId && x.CommitDate == null)
+            .SelectMany(x => x.Orders);
+
+        _context.Orders.RemoveRange(ordersToRemove);
+
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task DeleteAllUserAlbumOrdersAsync(int userId, int albumId)
+    {
+        var ordersToRemove = _context.OrderLists
+            .Include(x => x.Orders)
+            .ThenInclude(x => x.Cloth)
+            .Where(x => x.UserId == userId && x.CommitDate == null)
+            .SelectMany(x => x.Orders)
+            .Where(x => x.Cloth!.AlbumId == albumId);
+
+        _context.Orders.RemoveRange(ordersToRemove);
 
         await _context.SaveChangesAsync();
     }

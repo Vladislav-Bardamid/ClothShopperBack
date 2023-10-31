@@ -27,8 +27,7 @@ public class AppDbContext : IdentityDbContext<User, Role, int>
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<Order>().HasKey(x => new { x.UserId, x.ClothId });
-        modelBuilder.Entity<User>().HasMany(x => x.Orders).WithOne(x => x.User).HasForeignKey(x => x.UserId);
+        modelBuilder.Entity<User>().HasMany(x => x.OrderLists).WithOne(x => x.User).HasForeignKey(x => x.UserId);
         modelBuilder.Entity<Cloth>().HasMany(x => x.Orders).WithOne(x => x.Cloth).HasForeignKey(x => x.ClothId);
 
         InitData(modelBuilder);

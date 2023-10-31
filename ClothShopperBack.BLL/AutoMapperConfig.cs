@@ -11,12 +11,16 @@ internal class AutoMapperConfig : Profile
     public AutoMapperConfig()
     {
         // Db maps
-        CreateMap<User, UserDTO>().ReverseMap();
+        CreateMap<User, UserDTO>()
+            .ReverseMap();
         CreateMap<Cloth, ClothDTO>().ReverseMap();
+        CreateMap<Cloth, OrderDTO>()
+            .ForMember(d => d.Id, m => m.Ignore())
+            .ForMember(d => d.ClothId, m => m.MapFrom(e => e.Id));
         CreateMap<Album, AlbumDTO>().ReverseMap();
-        CreateMap<Order, OrderDTO>().ReverseMap();
+        CreateMap<Order, OrderDTO>().IncludeMembers(x => x.Cloth).ReverseMap();
         CreateMap<OrderList, OrderListDTO>().ReverseMap();
-        
+
         // Vk maps
         CreateMap<VkAlbum, AlbumDTO>()
             .ForMember(d => d.Id, m => m.Ignore());
@@ -33,7 +37,8 @@ internal class AutoMapperConfig : Profile
 
     private string FirstUrlOrDefault(IEnumerable<VkPhotoSize> sizes, char type)
     {
-        return sizes.FirstOrDefault(x => x.Type == type)?.Url ?? sizes.First(x => x.Type == 'x').Url;
+        return sizes.FirstOrDefault(x => x.Type == type)?.Url
+            ?? sizes.First(x => x.Type == 'x').Url;
     }
 
     private DateTime ConvertFromUnixTimestamp(int timestamp)

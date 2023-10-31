@@ -2,6 +2,7 @@ namespace ClothShopperBack.BLL.Models;
 
 public class OrderDTO
 {
+    public int Id { get; set; }
     public int ClothId { get; set; }
     public int UserId { get; set; }
     public int? OrderListId { get; set; }

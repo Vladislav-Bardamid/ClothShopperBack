@@ -6,5 +6,5 @@ public class User : IdentityUser<int>
 {
     public int VkUserId { get; set; }
     public string VkAccessToken { get; set; }
-    public ICollection<Order> Orders { get; set; }
+    public ICollection<OrderList> OrderLists { get; set; }
 }

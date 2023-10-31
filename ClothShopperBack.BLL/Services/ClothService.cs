@@ -23,7 +23,7 @@ public class ClothService : IClothService
     private IMapper _mapper;
     private IVkAPI _api;
 
-    public ClothService(AppDbContext context, IVkAPI api, IMapper mapper, UserManager<User> userManager)
+    public ClothService(AppDbContext context, IVkAPI api, IMapper mapper)
     {
         _context = context;
         _mapper = mapper;
@@ -75,8 +75,9 @@ public class ClothService : IClothService
 
         var selectedClothes = clothes
                 .Include(x => x.Orders)
+                .ThenInclude(x => x.OrderList)
                 .Where(x => x.Orders
-                    .Any(y => y.UserId == filter.UserId));
+                    .Any(y => y.OrderList.UserId == filter.UserId));
 
         var price = 0;
 
